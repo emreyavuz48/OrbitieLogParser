@@ -1,0 +1,8 @@
+2026-06-22 09:32:08.357 +03:00 [INF] Seed=>Company
+2026-06-22 09:32:08.362 +03:00 [INF] Seed=>Workplace
+2026-06-22 09:38:29.391 +03:00 [ERR] ExceptionFilter->OnException
+System.ArgumentException: Test hatası detayı burada yer alıyor.
+   konum: Orbitie.ERP.Program.Main()
+
+   2026-06-22 09:45:00.000 +03:00 [INF] Test=>LiveSyncSuccessful
+   2026-06-22 09:50:00.000 +03:00 [INF] SecondLiveTest=>Success
