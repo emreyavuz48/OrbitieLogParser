@@ -33,29 +33,45 @@ Uygulamayı kendi bilgisayarınızda çalıştırabilmek için şu yazılımlar�
 
 ## Veritabanı Kurulumu
 
-Uygulamayı başlatmadan önce SQL Server'da `Orbitie` isminde bir veritabanı oluşturup, aşağıdaki T-SQL komutlarını çalıştırarak gerekli tabloları ve performans indekslerini oluşturun:
+Uygulamayı başlatmadan önce SQL Server'da `OrbitieLogDb` isminde bir veritabanı oluşturup, aşağıdaki T-SQL komutlarını çalıştırarak gerekli tabloları ve performans indekslerini oluşturun:
 
 ```sql
--- 1. Veritabanını oluşturun ve seçin
-CREATE DATABASE Orbitie;
+CREATE DATABASE OrbitieLogDb;
 GO
-USE Orbitie;
+USE OrbitieLogDb;
 GO
 
--- 2. Logs tablosunu oluşturun
+-- 1. Varsa eski tabloyu temizle
+DROP TABLE IF EXISTS [dbo].[Logs];
+GO
+
+-- 2. Logs Tablosunun Oluşturulması
 CREATE TABLE [dbo].[Logs] (
-    [Id] INT IDENTITY(1,1) PRIMARY KEY,
+    [Id] BIGINT IDENTITY(1,1) NOT NULL,
     [Timestamp] DATETIMEOFFSET NOT NULL,
     [LogLevel] NVARCHAR(10) NOT NULL,
     [SourceContext] NVARCHAR(255) NULL,
     [Message] NVARCHAR(MAX) NOT NULL,
-    [Exception] NVARCHAR(MAX) NULL
+    [Exception] NVARCHAR(MAX) NULL,
+    
+    CONSTRAINT [PK_Logs] PRIMARY KEY CLUSTERED ([Id] ASC)
 );
 GO
 
--- 3. Sorgu performansı için index (Filtreleme ve sayfalama işlemlerini hızlandırır)
-CREATE NONCLUSTERED INDEX [IX_Logs_Timestamp_LogLevel] 
-ON [dbo].[Logs]([Timestamp] DESC, [LogLevel]);
+-- 3. Performans İndekslerinin Oluşturulması
+-- İndeks 1: Tarih aralığına göre (en yeniden eskiye) filtreleme yapmak için
+CREATE NONCLUSTERED INDEX [IX_Logs_Timestamp] 
+ON [dbo].[Logs] ([Timestamp] DESC);
+GO
+
+-- İndeks 2: LogLevel filtrelemesi ve tarihe göre sıralama için
+CREATE NONCLUSTERED INDEX [IX_Logs_LogLevel_Timestamp] 
+ON [dbo].[Logs] ([LogLevel] ASC, [Timestamp] DESC);
+GO
+
+-- İndeks 3: SourceContext filtrelemesi ve tarihe göre sıralama için
+CREATE NONCLUSTERED INDEX [IX_Logs_SourceContext_Timestamp] 
+ON [dbo].[Logs] ([SourceContext] ASC, [Timestamp] DESC);
 GO
 Yapılandırma (Configuration)
 1. Backend Bağlantı Ayarı (Web API & Log Parser)
@@ -64,13 +80,13 @@ Veritabanı bağlantınızı Task2.1-WebAPI/appsettings.json içerisinde aşağ�
 JSON
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=Orbitie;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=localhost;Database=OrbitieLogDb;Trusted_Connection=True;TrustServerCertificate=True;"
   }
 }
 2. Frontend API Bağlantı Ayarı (React)
-React uygulamasının backend ile haberleşebilmesi için, orbitie-log-dashboard dizinindeki .env dosyasında API adresinin doğru tanımlandığından emin olun:
+React uygulamasının backend ile haberleşebilmesi için, orbitie-log-dashboard dizinindeki .env dosyasında (veya api.ts içinde) API adresinin doğru tanımlandığından emin olun:
 
-Kod snippet'i
+Plaintext
 REACT_APP_API_BASE_URL=http://localhost:5243/api
 Projeyi Ayağa Kaldırma
 Sistemin tüm parçalarını sırasıyla çalıştırmak için terminal üzerinden aşağıdaki adımları izleyin:
